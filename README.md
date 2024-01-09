@@ -1,4 +1,4 @@
-# KEDA-AKS-Queue-Storage
+# KEDA-AKS-Azure-Queue-Storage
 Example setup to trigger jobs on AKS to consume and process messages from Azure Queue Storage with KEDA.  
   
 The following example will add 100 messages to Queue Storage. KEDA will watch the queue and start Kubernetes Jobs to calculate the n-th Fibonacci number recursively (load simulation).
