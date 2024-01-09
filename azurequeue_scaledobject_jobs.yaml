@@ -1,0 +1,68 @@
+apiVersion: keda.sh/v1alpha1
+kind: TriggerAuthentication
+metadata:
+  name: queue-auth
+spec:
+  secretTargetRef:
+  - parameter: connection
+    name: storage-secret
+    key: AZURE_STORAGE_CONNECTION_STRING
+
+---
+
+apiVersion: keda.sh/v1alpha1
+kind: ScaledJob
+metadata:
+  name: queue-job
+  namespace: kedajob
+spec:
+  jobTargetRef:
+    parallelism: 1
+    completions: 1
+    activeDeadlineSeconds: 600
+    backoffLimit: 6
+    template:
+      spec:
+        containers:
+        - name: pyjob
+          image: acrspring2.azurecr.io/pyjob:latest       # replace with your image
+          command: ["python", "/app/pycontainer.py"]
+          resources:
+            requests:
+              cpu: "900m"
+            limits:
+              cpu: "900m"
+          env:
+          - name: AZURE_STORAGE_CONNECTION_STRING
+            valueFrom:
+              secretKeyRef:
+                name: storage-secret
+                key: AZURE_STORAGE_CONNECTION_STRING
+          - name: AZURE_STORAGE_QUEUE_NAME
+            valueFrom:
+              secretKeyRef:
+                name: queue-name
+                key: AZURE_STORAGE_QUEUE_NAME
+        restartPolicy: Never
+        affinity:
+          nodeAffinity:
+            requiredDuringSchedulingIgnoredDuringExecution:
+              nodeSelectorTerms:
+              - matchExpressions:
+                - key: kubernetes.azure.com/mode
+                  operator: In
+                  values:
+                  - user
+  pollingInterval: 10
+  maxReplicaCount: 50
+  rollout:
+    strategy: gradual
+    propagationPolicy: foreground
+  triggers:
+  - type: azure-queue
+    metadata:
+      queueName: message-queue
+      accountName: kedaqstorage
+      queueLength: '1'
+    authenticationRef:
+      name: queue-auth
