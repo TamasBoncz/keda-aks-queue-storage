@@ -10,4 +10,4 @@ COPY pycontainer.py /app
 RUN pip install --no-cache-dir azure-storage-queue
 
 # Run pycontainer.py when the container launches
-CMD ["python", "pycontainer.py"]
+CMD ["python", "src/pycontainer.py"]
